@@ -30,7 +30,7 @@ const { Movements, goals } = pathfinderModule
 
 // SERVER SOZLAMALARI
 const botOptions = {
-  host: 'minexis.aternos.me', // <-- IP NI YOZISHNI UNUTMANG
+  host: 'jigar_.aternos.me', // <-- IP NI YOZISHNI UNUTMANG
   port: 25565,
   username: 'XisHelperBot',
   version: false
@@ -129,5 +129,6 @@ setInterval(() => {
         bot.chat('/warp botuy')
     }
 }, 300000)
+
 
 startBot()
