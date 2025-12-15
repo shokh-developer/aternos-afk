@@ -7,13 +7,13 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mineflayer": "4.20.1",
-    "mineflayer-auto-eat": "3.3.4",
-    "mineflayer-collectblock": "1.5.0",
-    "mineflayer-pathfinder": "2.4.5",
-    "mineflayer-pvp": "1.3.2",
-    "mineflayer-tool": "1.2.0"
+    "express": "latest",
+    "mineflayer": "latest",
+    "mineflayer-auto-eat": "latest",
+    "mineflayer-collectblock": "latest",
+    "mineflayer-pathfinder": "latest",
+    "mineflayer-pvp": "latest",
+    "mineflayer-tool": "latest"
   },
   "engines": {
     "node": ">=18.0.0"
