@@ -1,25 +1,35 @@
 const mineflayer = require('mineflayer')
-// --- RENDER UCHUN KOD ---
+
+// --- RENDER UCHUN KOD (WEB SERVER) ---
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 3000
 
-app.get('/', (req, res) => res.send('Bot ishlayapti!'))
+app.get('/', (req, res) => res.send('Bot 24/7 ishlamoqda!'))
 app.listen(port, () => console.log(`Web server http://localhost:${port} da ishga tushdi`))
-// ------------------------
+// -------------------------------------
 
-// KUTUBXONALARNI TO'G'RI IMPORT QILISH
-const { pathfinder, Movements, goals } = require('mineflayer-pathfinder')
-const pvp = require('mineflayer-pvp').plugin
-const autoEat = require('mineflayer-auto-eat').plugin
-const collectBlock = require('mineflayer-collectblock').plugin
-const tool = require('mineflayer-tool').plugin
+// KUTUBXONALARNI XAVFSIZ CHAQIRIB OLISH
+const pathfinderModule = require('mineflayer-pathfinder')
+const pvpModule = require('mineflayer-pvp')
+const autoEatModule = require('mineflayer-auto-eat')
+const collectBlockModule = require('mineflayer-collectblock')
+const toolModule = require('mineflayer-tool')
+
+// Plaginlarni to'g'ri ajratib olish (Universal usul)
+const pathfinder = pathfinderModule.pathfinder
+const Movements = pathfinderModule.Movements
+const goals = pathfinderModule.goals
+const pvp = pvpModule.plugin || pvpModule
+const autoEat = autoEatModule.plugin || autoEatModule
+const collectBlock = collectBlockModule.plugin || collectBlockModule
+const tool = toolModule.plugin || toolModule
 
 const botOptions = {
-  host: 'jigar_.aternos.me',
-  port: 25565,
+  host: 'jigar_.aternos.me', 
+  port: 25565,             // DIQQAT: Aternosda port har doim o'zgaradi! Saytdan tekshiring.
   username: 'XisHelperBot',
-  version: false // Avtomatik versiya
+  version: false           // Avtomatik versiya
 }
 
 let bot
@@ -29,26 +39,21 @@ function startBot() {
   console.log('Bot serverga ulanmoqda...')
   bot = mineflayer.createBot(botOptions)
 
-  // PLAGINLARNI XAVFSIZ YUKLASH
-  // Agar plagin noto'g'ri bo'lsa, bot o'chib qolmaydi
-  try {
-      if (pathfinder) bot.loadPlugin(pathfinder)
-      if (pvp) bot.loadPlugin(pvp)
-      if (autoEat) bot.loadPlugin(autoEat)
-      if (collectBlock) bot.loadPlugin(collectBlock)
-      if (tool) bot.loadPlugin(tool)
-  } catch (err) {
-      console.log('Plagin yuklashda xatolik (lekin bot ishlashda davom etadi):', err.message)
-  }
+  // PLAGINLARNI YUKLASH
+  loadPluginSafe(bot, pathfinder, 'Pathfinder')
+  loadPluginSafe(bot, pvp, 'PvP')
+  loadPluginSafe(bot, autoEat, 'AutoEat')
+  loadPluginSafe(bot, collectBlock, 'CollectBlock')
+  loadPluginSafe(bot, tool, 'Tool')
 
   bot.on('spawn', () => {
     console.log('Bot serverga kirdi!')
     
     // Serverga kirgach komandalar
-    setTimeout(() => bot.chat('/warp botuy'), 3000) 
-    setTimeout(() => bot.chat('/mvtp XisHelperMap'), 6000)
+    setTimeout(() => bot.chat('/warp botuy'), 5000) 
+    setTimeout(() => bot.chat('/mvtp XisHelperMap'), 10000)
     
-    // Harakatlanish sozlamalari (Pathfinder yuklangan bo'lsa)
+    // Harakatlanish sozlamalari
     if (bot.pathfinder) {
         const defaultMove = new Movements(bot)
         defaultMove.allowParkour = false 
@@ -60,83 +65,109 @@ function startBot() {
     if (bot.autoEat) {
         bot.autoEat.options.priority = 'foodPoints'
         bot.autoEat.options.startAt = 14
-        bot.autoEat.options.bannedFood = []
+        bot.autoEat.options.bannedFood = ['rotten_flesh', 'spider_eye']
     }
 
-    // 10 soniyadan keyin ishni boshlaydi
+    // 15 soniyadan keyin ishni boshlaydi
     setTimeout(() => {
-        console.log("Survival va Jang rejimi boshlandi!")
+        console.log("Survival va Jang rejimi faollashdi!")
         survivalIsActive = true
-        mainLoop() // Asosiy sikl
-    }, 10000)
+        mainLoop() 
+    }, 15000)
   })
 
   bot.on('death', () => console.log("Bot o'ldi va qayta tug'iladi."))
   
-  bot.on('mob_killed', (loot) => {
-      console.log("Dushman o'ldirildi!")
-      bot.chat("Dushmanni yo'q qildim!")
-  })
-
+  bot.on('kicked', console.log)
+  
   bot.on('end', (reason) => {
-    console.log(`Bot uzildi: ${reason}. Qayta ulanaman...`)
+    console.log(`Bot uzildi: ${reason}. 10 soniyadan keyin qayta ulanaman...`)
     setTimeout(startBot, 10000)
   })
 
   bot.on('error', (err) => console.log(`Xatolik: ${err.message}`))
 }
 
-// Asosiy mantiq (Jang + Ishlash)
+// Plagin yuklash uchun yordamchi funksiya (Xatolikni oldini oladi)
+function loadPluginSafe(botInstance, pluginFunction, name) {
+    try {
+        if (typeof pluginFunction === 'function') {
+            botInstance.loadPlugin(pluginFunction)
+            console.log(`${name} plagini yuklandi.`)
+        } else {
+            console.log(`Ogohlantirish: ${name} plagini yuklanmadi (funksiya emas).`)
+        }
+    } catch (e) {
+        console.log(`${name} yuklashda xato: ${e.message}`)
+    }
+}
+
+// ASOSIY SIKL (JANG VA YURISH)
 async function mainLoop() {
     if (!bot || !bot.entity || !survivalIsActive) return
 
     try {
-        // 1. DUSHMANNI TEKSHIRISH
+        // 1. JANG HOLATINI TEKSHIRISH
         if (bot.pvp && bot.pvp.target) {
+            // Agar jang qilayotgan bo'lsa, xalaqit bermaymiz
             setTimeout(mainLoop, 1000)
             return
         }
 
-        // Atrofdagi 20 blok ichidagi dushmanni qidirish
-        const dushman = bot.nearestEntity(e => 
-            e.type === 'mob' && 
-            e.position.distanceTo(bot.entity.position) < 20 && 
-            (e.name === 'zombie' || e.name === 'skeleton' || e.name === 'spider' || e.name === 'creeper')
-        )
+        // 2. DUSHMAN QIDIRISH (20 blok radiusda)
+        const dushman = bot.nearestEntity(e => {
+            if (e.type !== 'mob') return false
+            // Dushman nomini kichik harflarda tekshiramiz (ishonchliroq)
+            const name = e.name.toLowerCase() // yoki e.mobType
+            const enemies = ['zombie', 'skeleton', 'spider', 'creeper', 'husk']
+            return enemies.includes(name) && e.position.distanceTo(bot.entity.position) < 20
+        })
 
-        if (dushman && bot.pvp) {
-            console.log(`${dushman.name} topildi! Hujumga o'taman...`)
+        if (dushman) {
+            console.log(`${dushman.name} topildi! Hujum...`)
             
+            // Yurishni to'xtatish
             if (bot.pathfinder && bot.pathfinder.isMoving()) bot.pathfinder.stop()
             
+            // Qilich olish
             const sword = bot.inventory.items().find(item => item.name.includes('sword'))
             if (sword) await bot.equip(sword, 'hand')
 
-            await bot.pvp.attack(dushman)
-            
-            setTimeout(mainLoop, 500)
-            return
-        }
-
-        // 2. JANG BO'LMASA -> AYLANIB YURISH
-        if (bot.pathfinder) {
-            const x = bot.entity.position.x + (Math.random() * 10 - 5)
-            const z = bot.entity.position.z + (Math.random() * 10 - 5)
-            await bot.pathfinder.goto(new goals.GoalBlock(x, bot.entity.position.y, z))
+            // Hujum qilish
+            if (bot.pvp) {
+                await bot.pvp.attack(dushman)
+            }
+        } else {
+            // 3. DUSHMAN YO'Q BO'LSA - AYLANI B YURISH
+            if (bot.pathfinder && !bot.pathfinder.isMoving()) {
+                const r = 10 // Yurish radiusi
+                const x = bot.entity.position.x + (Math.random() * r * 2 - r)
+                const z = bot.entity.position.z + (Math.random() * r * 2 - r)
+                
+                // Boroladigan joymi tekshirish shart emas, pathfinder o'zi hal qiladi
+                await bot.pathfinder.goto(new goals.GoalBlock(x, bot.entity.position.y, z)).catch(() => {})
+            }
         }
 
     } catch (err) {
-        // Xatolik bo'lsa indamaymiz
+        // Xatolik bo'lsa bot to'xtab qolmasligi kerak
+        // console.log('Siklda kichik xato:', err.message)
     }
 
+    // Qayta tekshirish tezligi (1 soniya)
     setTimeout(mainLoop, 1000)
 }
 
-// 5 daqiqalik anti-afk
+// 5 daqiqalik Anti-AFK
 setInterval(() => {
     if(bot && bot.entity) {
         bot.chat('/warp botuy')
+        bot.swingArm('right')
     }
 }, 300000)
+
+// Node.js xatolikdan o'chib qolmasligi uchun
+process.on('uncaughtException', (err) => console.log('Kritik xato ushlandi:', err))
+process.on('unhandledRejection', (err) => console.log('Va\'da xatosi:', err))
 
 startBot()
